@@ -1,7 +1,5 @@
 package pl.mysza.skymasterevotool.ui.screens
-import pl.mysza.skymasterevotool.ui.components.ParametersCard
-import pl.mysza.skymasterevotool.ui.components.HeaderCard
-import pl.mysza.skymasterevotool.ui.components.DataCard
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -87,6 +85,51 @@ fun HomeScreen(wheelsData: WheelsData) {
 }
 
 @Composable
+private fun HeaderCard(
+    wheelsData: WheelsData,
+    battery: Int,
+    mode: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(18.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "🛹 WHEELS 11 EVO SMART",
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = if (wheelsData.connected) "🟢 CONNECTED" else "🔴 DISCONNECTED",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "🔋 $battery%    📶 ${wheelsData.rssi?.let { "$it dBm" } ?: "---"}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "MODE: $mode",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
 private fun SpeedDigitalCard(speed: Int) {
     Card(
         modifier = Modifier
@@ -114,6 +157,52 @@ private fun SpeedDigitalCard(speed: Int) {
 }
 
 @Composable
+private fun DataCard(
+    title: String,
+    value: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.height(132.dp),
+        shape = RoundedCornerShape(22.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(14.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(value, style = MaterialTheme.typography.headlineMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun ParametersCard(
+    wheelsData: WheelsData,
+    mode: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("PARAMETRY JAZDY", style = MaterialTheme.typography.titleMedium)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text("Tryb: $mode")
+            Text("Max Speed: ${wheelsData.maxSpeed ?: "---"} km/h")
+            Text("Steering: ${wheelsData.steering ?: "---"}")
+            Text("Dynamic: ${wheelsData.dynamic ?: "---"}")
+            Text("Autoryzacja: ${if (wheelsData.authOk) "OK" else "---"}")
+        }
+    }
+}
+
 private fun batteryBar(battery: Int): String {
     val filled = (battery.coerceIn(0, 100) / 10).coerceIn(0, 10)
     val empty = 10 - filled
