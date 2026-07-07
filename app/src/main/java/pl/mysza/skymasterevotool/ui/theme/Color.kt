@@ -1,4 +1,4 @@
-package pl.mysza.skymasterevotool.ui.theme.theme
+package pl.mysza.skymasterevotool.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

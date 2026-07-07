@@ -1,4 +1,4 @@
-package pl.mysza.skymasterevotool.ui.theme.theme
+package pl.mysza.skymasterevotool.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
