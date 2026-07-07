@@ -1,4 +1,5 @@
 package pl.mysza.skymasterevotool
+import pl.mysza.skymasterevotool.ui.screens.LogScreen
 import pl.mysza.skymasterevotool.ui.screens.ControlScreen
 import pl.mysza.skymasterevotool.ui.screens.ScanScreen
 import pl.mysza.skymasterevotool.ui.screens.HomeScreen
@@ -281,22 +282,6 @@ fun SkymasterEvoToolApp(
                     3 -> LogScreen(logText = logText, onClear = { logText = "" })
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun LogScreen(logText: String, onClear: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Button(onClick = onClear, modifier = Modifier.fillMaxWidth()) { Text("WYCZYŚĆ LOG") }
-        Spacer(modifier = Modifier.height(12.dp))
-        Surface(modifier = Modifier.fillMaxSize(), tonalElevation = 2.dp) {
-            Text(
-                text = if (logText.isBlank()) "Brak logów..." else logText,
-                modifier = Modifier
-                    .padding(12.dp)
-                    .verticalScroll(rememberScrollState())
-            )
         }
     }
 }
