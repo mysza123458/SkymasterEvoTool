@@ -1,4 +1,5 @@
 package pl.mysza.skymasterevotool
+import pl.mysza.skymasterevotool.ui.screens.ControlScreen
 import pl.mysza.skymasterevotool.ui.screens.ScanScreen
 import pl.mysza.skymasterevotool.ui.screens.HomeScreen
 import pl.mysza.skymasterevotool.model.BleDeviceItem
@@ -19,7 +20,6 @@ import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -281,107 +281,6 @@ fun SkymasterEvoToolApp(
                     3 -> LogScreen(logText = logText, onClear = { logText = "" })
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun ControlScreen(
-    wheelsData: WheelsData,
-    batteryWarningLevel: Int,
-    onBatteryWarningLevelChange: (Int) -> Unit,
-    onStandard: () -> Unit,
-    onSport: () -> Unit,
-    onStandbyOn: () -> Unit,
-    onStandbyOff: () -> Unit,
-    onApplySettings: (Int, Int, Int) -> Unit
-) {
-    var maxSpeed by remember(wheelsData.maxSpeed) { mutableFloatStateOf((wheelsData.maxSpeed ?: 10).toFloat()) }
-    var steering by remember(wheelsData.steering) { mutableFloatStateOf((wheelsData.steering ?: 6).toFloat()) }
-    var dynamic by remember(wheelsData.dynamic) { mutableFloatStateOf((wheelsData.dynamic ?: 3).toFloat()) }
-
-    val maxSpeedInt = maxSpeed.roundToInt().coerceIn(6, 18)
-    val steeringInt = steering.roundToInt().coerceIn(1, 10)
-    val dynamicInt = dynamic.roundToInt().coerceIn(0, 6)
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        Text("Sterowanie", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Manualne ustawienia", style = MaterialTheme.typography.titleMedium)
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Max Speed: $maxSpeedInt km/h")
-                Slider(value = maxSpeed, onValueChange = { maxSpeed = it }, valueRange = 6f..18f, steps = 11)
-
-                Text("Steering: $steeringInt")
-                Slider(value = steering, onValueChange = { steering = it }, valueRange = 1f..10f, steps = 8)
-
-                Text("Dynamic: $dynamicInt")
-                Slider(value = dynamic, onValueChange = { dynamic = it }, valueRange = 0f..6f, steps = 5)
-
-                Button(
-                    onClick = { onApplySettings(maxSpeedInt, steeringInt, dynamicInt) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("WYŚLIJ USTAWIENIA")
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Ostrzeżenie baterii", style = MaterialTheme.typography.titleMedium)
-                Text("Próg powiadomienia: $batteryWarningLevel%")
-                Slider(
-                    value = batteryWarningLevel.toFloat(),
-                    onValueChange = { onBatteryWarningLevelChange(it.roundToInt().coerceIn(5, 50)) },
-                    valueRange = 5f..50f,
-                    steps = 44
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = {
-                    maxSpeed = 10f
-                    steering = 6f
-                    dynamic = 3f
-                    onStandard()
-                },
-                modifier = Modifier.weight(1f)
-            ) { Text("STANDARD") }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Button(
-                onClick = {
-                    maxSpeed = 18f
-                    steering = 10f
-                    dynamic = 6f
-                    onSport()
-                },
-                modifier = Modifier.weight(1f)
-            ) { Text("SPORT") }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Button(onClick = onStandbyOn, modifier = Modifier.weight(1f)) { Text("STANDBY ON") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = onStandbyOff, modifier = Modifier.weight(1f)) { Text("STANDBY OFF") }
         }
     }
 }
