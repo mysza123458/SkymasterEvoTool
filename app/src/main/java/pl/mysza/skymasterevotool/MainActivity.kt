@@ -1,5 +1,5 @@
 package pl.mysza.skymasterevotool
-
+import pl.mysza.skymasterevotool.model.BleDeviceItem
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -34,12 +34,6 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-data class BleDeviceItem(
-    val name: String,
-    val address: String,
-    val rssi: Int,
-    val device: BluetoothDevice
-)
 
 class MainActivity : ComponentActivity() {
 
