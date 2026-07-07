@@ -1,4 +1,5 @@
 package pl.mysza.skymasterevotool
+import pl.mysza.skymasterevotool.ui.screens.ScanScreen
 import pl.mysza.skymasterevotool.ui.screens.HomeScreen
 import pl.mysza.skymasterevotool.model.BleDeviceItem
 import android.Manifest
@@ -278,51 +279,6 @@ fun SkymasterEvoToolApp(
                         onApplySettings = onApplySettings
                     )
                     3 -> LogScreen(logText = logText, onClear = { logText = "" })
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ScanScreen(
-    devices: List<BleDeviceItem>,
-    onStartScan: () -> Unit,
-    onStopScan: () -> Unit,
-    onConnect: (BleDeviceItem) -> Unit,
-    onDisconnect: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        Button(onClick = onStartScan, modifier = Modifier.fillMaxWidth()) { Text("SKANUJ WHEELS") }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onStopScan, modifier = Modifier.fillMaxWidth()) { Text("STOP SKAN") }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onDisconnect, modifier = Modifier.fillMaxWidth()) { Text("ROZŁĄCZ") }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Znalezione urządzenia:", style = MaterialTheme.typography.titleMedium)
-
-        if (devices.isEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Brak urządzeń Wheels")
-        } else {
-            devices.forEach { item ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clickable { onConnect(item) }
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(item.name, style = MaterialTheme.typography.titleMedium)
-                        Text(item.address)
-                        Text("RSSI: ${item.rssi}")
-                        Text("Kliknij, aby połączyć")
-                    }
                 }
             }
         }
