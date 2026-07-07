@@ -3,6 +3,8 @@ package pl.mysza.skymasterevotool.ble
 import android.annotation.SuppressLint
 import android.bluetooth.*
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import java.util.UUID
 
 data class WheelsData(
@@ -15,7 +17,8 @@ data class WheelsData(
     val sessionMileage: Int? = null,
     val maxSpeed: Int? = null,
     val steering: Int? = null,
-    val dynamic: Int? = null
+    val dynamic: Int? = null,
+    val rssi: Int? = null
 )
 
 class BleManager(
@@ -34,6 +37,15 @@ class BleManager(
     private var writeCharacteristic: BluetoothGattCharacteristic? = null
     private var data = WheelsData()
 
+    private val handler = Handler(Looper.getMainLooper())
+    private val rssiRunnable = object : Runnable {
+        @SuppressLint("MissingPermission")
+        override fun run() {
+            gatt?.readRemoteRssi()
+            handler.postDelayed(this, 3000)
+        }
+    }
+
     @SuppressLint("MissingPermission")
     fun connect(device: BluetoothDevice) {
         log("Connecting...")
@@ -43,6 +55,7 @@ class BleManager(
     @SuppressLint("MissingPermission")
     fun disconnect() {
         log("Disconnect requested")
+        handler.removeCallbacks(rssiRunnable)
         gatt?.disconnect()
         gatt?.close()
         gatt = null
@@ -71,15 +84,15 @@ class BleManager(
     fun setStandardMode() {
         log("Ustawiam tryb STANDARD")
         setMaxSpeed(10)
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ setSteering(6) }, 300)
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ setDynamic(3) }, 600)
+        handler.postDelayed({ setSteering(6) }, 300)
+        handler.postDelayed({ setDynamic(3) }, 600)
     }
 
     fun setSportMode() {
         log("Ustawiam tryb SPORT")
         setMaxSpeed(18)
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ setSteering(10) }, 300)
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ setDynamic(6) }, 600)
+        handler.postDelayed({ setSteering(10) }, 300)
+        handler.postDelayed({ setDynamic(6) }, 600)
     }
 
     fun setMaxSpeed(value: Int) {
@@ -111,20 +124,26 @@ class BleManager(
 
     private val callback = object : BluetoothGattCallback() {
 
-        override fun onConnectionStateChange(
-            gatt: BluetoothGatt,
-            status: Int,
-            newState: Int
-        ) {
+        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 data = data.copy(connected = true)
                 onData(data)
                 log("CONNECTED status=$status")
                 gatt.discoverServices()
+                handler.post(rssiRunnable)
             } else {
+                handler.removeCallbacks(rssiRunnable)
                 data = data.copy(connected = false, authOk = false)
                 onData(data)
                 log("DISCONNECTED status=$status newState=$newState")
+            }
+        }
+
+        override fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                data = data.copy(rssi = rssi)
+                onData(data)
+                log("RSSI: $rssi dBm")
             }
         }
 
@@ -164,11 +183,7 @@ class BleManager(
             log("Enable notification writeDescriptor=$ok")
         }
 
-        override fun onDescriptorWrite(
-            gatt: BluetoothGatt,
-            descriptor: BluetoothGattDescriptor,
-            status: Int
-        ) {
+        override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             log("Descriptor write status=$status")
 
             if (descriptor.uuid == CCCD_UUID && status == BluetoothGatt.GATT_SUCCESS) {
@@ -177,18 +192,11 @@ class BleManager(
             }
         }
 
-        override fun onCharacteristicWrite(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            status: Int
-        ) {
+        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
             log("Characteristic write status=$status")
         }
 
-        override fun onCharacteristicChanged(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic
-        ) {
+        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             val value = characteristic.value
             log("RX -> ${value.toHex()}")
             parseFrame(value)
@@ -199,39 +207,33 @@ class BleManager(
         if (frame.size < 3) return
 
         when (frame[0].toInt() and 0xFF) {
-            0x01 -> {
-                if (frame.size >= 4) {
-                    val ok = (frame[3].toInt() and 0xFF) == 0
-                    data = data.copy(authOk = ok)
-                    onData(data)
-                    log(if (ok) "AUTH OK" else "AUTH FAIL")
-                }
+            0x01 -> if (frame.size >= 4) {
+                val ok = (frame[3].toInt() and 0xFF) == 0
+                data = data.copy(authOk = ok)
+                onData(data)
+                log(if (ok) "AUTH OK" else "AUTH FAIL")
             }
 
-            0x00 -> {
-                if (frame.size >= 11) {
-                    val mileage = ((frame[4].toInt() and 0xFF) shl 8) or
-                            (frame[5].toInt() and 0xFF)
+            0x00 -> if (frame.size >= 11) {
+                val mileage = ((frame[4].toInt() and 0xFF) shl 8) or
+                        (frame[5].toInt() and 0xFF)
 
-                    val speed = frame[6].toInt() and 0xFF
-                    val temp = frame[7].toInt() and 0xFF
+                val speed = frame[6].toInt() and 0xFF
+                val temp = frame[7].toInt() and 0xFF
+                val current = ((frame[8].toInt() and 0xFF) shl 8) or
+                        (frame[9].toInt() and 0xFF)
+                val battery = frame[10].toInt() and 0xFF
 
-                    val current = ((frame[8].toInt() and 0xFF) shl 8) or
-                            (frame[9].toInt() and 0xFF)
+                data = data.copy(
+                    battery = battery,
+                    speed = speed,
+                    temperature = temp,
+                    current = current,
+                    sessionMileage = mileage
+                )
+                onData(data)
 
-                    val battery = frame[10].toInt() and 0xFF
-
-                    data = data.copy(
-                        battery = battery,
-                        speed = speed,
-                        temperature = temp,
-                        current = current,
-                        sessionMileage = mileage
-                    )
-                    onData(data)
-
-                    log("STATUS: battery=$battery%, speed=$speed, temp=$temp°C, current=$current, mileage=$mileage")
-                }
+                log("STATUS: battery=$battery%, speed=$speed, temp=$temp°C, current=$current, mileage=$mileage")
             }
 
             0x03 -> if (frame.size >= 4) {
